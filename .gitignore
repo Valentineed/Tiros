@@ -72,3 +72,19 @@ Plugins/*/Intermediate/*
 
 # Cache files for the editor to use
 DerivedDataCache/*
+
+Binaries
+DerivedDataCache
+Intermediate
+Saved
+Build
+StarterContent
+.vscode
+.vs
+*.VC.DB
+*.opensdf
+*.sdf
+*.sln
+*.suo
+*.xcodeproj
+*.xcworkspace
