@@ -33,7 +33,7 @@ void UTirosGameInstance::OnCreateSessionComplete(FName ServerName, const bool Su
 
     if(Succeeded)
     {
-        GetWorld()->ServerTravel("/Game/FirstPersonCPP/Maps/FirstPersonExampleMap.FirstPersonExampleMap");
+        GetWorld()->ServerTravel("/Game/Maps/Dev/FirstPersonExampleMap.FirstPersonExampleMap");
     }
 }
 
