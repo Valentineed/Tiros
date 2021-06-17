@@ -13,5 +13,5 @@ ATirosGameMode::ATirosGameMode()
 	DefaultPawnClass = PlayerPawnClassFinder.Class;
 
 	// use our custom HUD class
-	//HUDClass = ATirosHUD::StaticClass();
+	HUDClass = ATirosHUD::StaticClass();
 }

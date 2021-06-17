@@ -8,6 +8,24 @@
 #include "Engine/GameInstance.h"
 #include "TirosGameInstance.generated.h"
 
+USTRUCT(BlueprintType)
+struct FServerInfo
+{
+	GENERATED_BODY()
+
+	UPROPERTY(BlueprintReadOnly)
+	FString ServerName;
+	UPROPERTY(BlueprintReadOnly)
+	int32 CurrentPlayer;
+	UPROPERTY(BlueprintReadOnly)
+	int32 MaxPlayer;
+	UPROPERTY(BlueprintReadOnly)
+	int32 ServerArrayIndex;
+};
+
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FServerDelegate, FServerInfo, ServerInfo);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FServerSearchingDelegate, bool, SearchingServers);
+
 /**
  * 
  */
@@ -28,13 +46,24 @@ protected:
 
 	virtual void OnJoinSessionComplete(FName SessionName, EOnJoinSessionCompleteResult::Type Result);
 
+	FName ClientSessionName;
+
+	UPROPERTY(BlueprintAssignable)
+	FServerDelegate ServerDelegate;
+
+	UPROPERTY(BlueprintAssignable)
+	FServerSearchingDelegate ServerSearchingDelegate;
+
 	TSharedPtr<FOnlineSessionSearch> SessionSearch;
 
 	IOnlineSessionPtr SessionInterface;
 
     UFUNCTION(BlueprintCallable)
-	void	CreateServer();
+	void	CreateServer(FString ServerName, FString HostName);
 
 	UFUNCTION(BlueprintCallable)
-	void	JoinServer();
+	void	FindServers();
+
+	UFUNCTION(BlueprintCallable)
+	void	JoinServer(int32 ArrayIndex);
 };

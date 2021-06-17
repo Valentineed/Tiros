@@ -9,6 +9,7 @@
 
 UTirosGameInstance::UTirosGameInstance()
 {
+    ClientSessionName = FName("TestSession");
 }
 
 void UTirosGameInstance::Init()
@@ -33,23 +34,40 @@ void UTirosGameInstance::OnCreateSessionComplete(FName ServerName, const bool Su
 
     if(Succeeded)
     {
-        GetWorld()->ServerTravel("/Game/Maps/Dev/FirstPersonExampleMap.FirstPersonExampleMap");
+        GetWorld()->ServerTravel("/Game/Maps/Dev/LVL_Axel.LVL_Axel");
     }
 }
 
 void UTirosGameInstance::OnFindSessionComplete(const bool Succeeded)
 {
+    ServerSearchingDelegate.Broadcast(false);
+
     UE_LOG(LogTemp, Warning, TEXT("OnFindSessionComplete succeeded: %d"), Succeeded);
 
     if(Succeeded)
     {
-        auto SearchResults = SessionSearch->SearchResults;
+        UE_LOG(LogTemp, Warning, TEXT("Found %d sessions"), SessionSearch->SearchResults.Num());
 
-        UE_LOG(LogTemp, Warning, TEXT("Found %d sessions"), SearchResults.Num());
-
-        if(SearchResults.Num())
+        int32 ArrayIndex = 0;
+        for(auto &Result : SessionSearch->SearchResults)
         {
-            SessionInterface->JoinSession(0, "TestSession", SearchResults[0]);
+            if(Result.IsValid())
+            {
+                FServerInfo ServerInfo;
+                FString ServerName = "EmptyName";
+                FString HostName = "EmptyName";
+
+                Result.Session.SessionSettings.Get(FName("SERVER_NAME"), ServerName);
+                Result.Session.SessionSettings.Get(FName("HOST_NAME"), HostName);
+
+                ServerInfo.ServerName = ServerName;
+                ServerInfo.MaxPlayer = Result.Session.SessionSettings.NumPublicConnections;
+                ServerInfo.CurrentPlayer = ServerInfo.MaxPlayer - Result.Session.NumOpenPublicConnections;
+                ServerInfo.ServerArrayIndex = ArrayIndex;
+
+                ServerDelegate.Broadcast(ServerInfo);
+            }
+            ArrayIndex++;
         }
         
     }
@@ -69,7 +87,7 @@ void UTirosGameInstance::OnJoinSessionComplete(const FName SessionName, EOnJoinS
     }
 }
 
-void UTirosGameInstance::CreateServer()
+void UTirosGameInstance::CreateServer(FString ServerName, FString HostName)
 {
     UE_LOG(LogTemp, Warning, TEXT("Creating server"));
 
@@ -87,13 +105,15 @@ void UTirosGameInstance::CreateServer()
     SessionSettings.bShouldAdvertise = true;
     SessionSettings.bUsesPresence = true;
     SessionSettings.NumPublicConnections = 10;
+    SessionSettings.Set(FName("SERVER_NAME"), ServerName, EOnlineDataAdvertisementType::ViaOnlineServiceAndPing);
+    SessionSettings.Set(FName("HOST_NAME"), HostName, EOnlineDataAdvertisementType::ViaOnlineServiceAndPing);
 
-    SessionInterface->CreateSession(0, FName("TestSession"), SessionSettings);
+    SessionInterface->CreateSession(0, ClientSessionName, SessionSettings);
 }
 
-void UTirosGameInstance::JoinServer()
+void UTirosGameInstance::FindServers()
 {
-    UE_LOG(LogTemp, Warning, TEXT("Joining server"));
+    ServerSearchingDelegate.Broadcast(true);
 
     SessionSearch = MakeShareable(new FOnlineSessionSearch);
     SessionSearch->bIsLanQuery = false;
@@ -110,4 +130,21 @@ void UTirosGameInstance::JoinServer()
     SessionSearch->QuerySettings.Set(SEARCH_PRESENCE, true, EOnlineComparisonOp::Equals);
 
     SessionInterface->FindSessions(0, SessionSearch.ToSharedRef());
+
+}
+
+void UTirosGameInstance::JoinServer(const int32 ArrayIndex)
+{
+    const auto SearchResult = SessionSearch->SearchResults[ArrayIndex];
+
+    if(SearchResult.IsValid())
+    {
+        UE_LOG(LogTemp, Warning, TEXT("Joining selected session at index %d"), ArrayIndex);
+        SessionInterface->JoinSession(0, ClientSessionName, SearchResult);
+    }
+    else
+    {
+        UE_LOG(LogTemp, Warning, TEXT("Failed to join session at index %d"), ArrayIndex);
+        
+    }
 }
